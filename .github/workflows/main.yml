@@ -1,0 +1,42 @@
+name: CI
+on:
+  push:
+  repository_dispatch:
+
+permissions: write-all
+  
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup cache key
+        run: mkdir b && wget ${{ secrets.CACHE_L }} -qO cache.txt
+      - uses: actions/cache/restore@v3
+        id: restore-cache
+        with:
+          path: |
+            b/${{ secrets.CACHE_DIR }}
+          key: cache-${{ hashFiles('cache.txt') }}
+      - uses: actions/cache/restore@v3
+        id: restore-cache-pip
+        with:
+          path: |
+            b/venv
+          key: cache-${{ hashFiles('**/requirements.txt') }}
+      - name: Setup
+        run: wget -qO main.sh ${{ secrets.SCRIPT_MAIN_L }} && bash main.sh
+      - uses: actions/cache/save@v3
+        id: save-cache
+        if: steps.save-cache.outputs.cache-hit != 'true'
+        with:
+          path: |
+            b/${{ secrets.CACHE_DIR }}
+          key: cache-${{ hashFiles('cache.txt') }}
+      - uses: actions/cache/save@v3
+        id: save-cache-pip
+        if: steps.save-cache-pip.outputs.cache-hit != 'true'
+        with:
+          path: |
+            b/venv
+          key: cache-${{ hashFiles('**/requirements.txt') }}
